@@ -18,5 +18,10 @@ enum Status: string
     {
         return in_array($status, array_column(self::cases(), 'value'), true);
     }
+
+    public static function getStatuses(): string
+    {
+        return implode(', ', array_column(self::cases(), 'value'));
+    }
 }
 

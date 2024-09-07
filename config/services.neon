@@ -1,6 +1,6 @@
 services:
 	- App\Core\RouterFactory::createRouter
-	- App\Api\Repositories\PetRepository(%appDir%/data/pet.xml)
+	- App\Api\Repositories\PetRepository(%appDir%/data/pets.xml)
 
 
 search:

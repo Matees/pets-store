@@ -10,51 +10,17 @@ class PetValidator
 
     const REQUIRED_FIELDS = ['id', 'name', 'category', 'photoUrls', 'tags', 'status'];
 
-    /**
-     * Validate the given pet data array.
-     *
-     * @param array $data
-     * @throws InvalidArgumentException if validation fails.
-     */
-    public static function validate(array $data): void
+    public static function validateStatus($status): void
     {
-        // Validate required fields
-        self::validateRequiredFields($data);
-
-        // Validate id (must be an integer)
-        if (!is_int($data['id'])) {
-            throw new InvalidArgumentException('Invalid value for "id". It must be an integer.');
+        if (!is_string($status) || !Status::isValid($status)) {
+            $statuses = Status::getStatuses();
+            throw new InvalidArgumentException("Invalid value for status. It must be one of: $statuses.");
         }
+    }
 
-        // Validate name (must be a string)
-        if (!is_string($data['name'])) {
-            throw new InvalidArgumentException('Invalid value for "name". It must be a string.');
-        }
-
-        // Validate category (must have id and name)
-        if (!isset($data['category']['id'], $data['category']['name'])) {
-            throw new InvalidArgumentException('Invalid category data. Both "id" and "name" are required.');
-        }
-
-        if (!is_int($data['category']['id'])) {
-            throw new InvalidArgumentException('Invalid value for "category.id". It must be an integer.');
-        }
-
-        if (!is_string($data['category']['name'])) {
-            throw new InvalidArgumentException('Invalid value for "category.name". It must be a string.');
-        }
-
-        // Validate photoUrls (must be an array of strings)
-        if (!is_array($data['photoUrls']) || array_filter($data['photoUrls'], 'is_string') !== $data['photoUrls']) {
-            throw new InvalidArgumentException('Invalid value for "photoUrls". It must be an array of strings.');
-        }
-
-        // Validate tags (must be an array of tag objects with id and name)
-        if (!is_array($data['tags'])) {
-            throw new InvalidArgumentException('Invalid value for "tags". It must be an array of tag objects.');
-        }
-
-        foreach ($data['tags'] as $tag) {
+    public static function validateTags(array $tags): void
+    {
+        foreach ($tags as $tag) {
             if (!isset($tag['id'], $tag['name'])) {
                 throw new InvalidArgumentException('Each tag must have "id" and "name".');
             }
@@ -67,24 +33,46 @@ class PetValidator
                 throw new InvalidArgumentException('Invalid value for "tag.name". It must be a string.');
             }
         }
+    }
 
-        if (!is_string($data['status']) || !Status::isValid($data['status'])) {
-            throw new InvalidArgumentException('Invalid value for "status". It must be one of: "available", "pending", "sold".');
+    public static function validateCategory(array $category): void
+    {
+        if (!isset($category['id'], $category['name'])) {
+            throw new InvalidArgumentException('Invalid category data. Both "id" and "name" are required.');
+        }
+
+        if (!is_int($category['id'])) {
+            throw new InvalidArgumentException('Invalid value for "category.id". It must be an integer.');
+        }
+
+        if (!is_string($category['name'])) {
+            throw new InvalidArgumentException('Invalid value for "category.name". It must be a string.');
         }
     }
 
     /**
-     * Validate the presence of required fields in the pet data.
+     * Validate the presence of required fields in the pet data and validate them.
      *
      * @param array $data
-     * @throws InvalidArgumentException if required fields are missing.
+     * @param array $requiredFields
      */
-    private static function validateRequiredFields(array $data): void
+    public static function validateRequiredFields(array $data, array $requiredFields = self::REQUIRED_FIELDS): void
     {
-        foreach (self::REQUIRED_FIELDS as $field) {
+
+        foreach ($requiredFields as $field) {
             if (!isset($data[$field])) {
                 throw new InvalidArgumentException(sprintf('Missing required field: %s', $field));
             }
+
+            match ($field) {
+                'id' => is_int($data[$field]) ? true : throw new InvalidArgumentException("Invalid value for $field. It must be an integer."),
+                'name' => is_string($data[$field]) ? true : throw new InvalidArgumentException("Invalid value for $field. It must be an string."),
+                'category' => self::validateCategory($data[$field]),
+                'photoUrls' => array_filter($data[$field], 'is_string') === $data[$field] ? true : throw new InvalidArgumentException('Invalid value for "photoUrls". It must be an array of strings.'),
+                'tags' => self::validateTags($data[$field]),
+                'status' => self::validateStatus($data[$field]),
+                default => null
+            };
         }
     }
 }

@@ -3,7 +3,10 @@
 namespace App\Api\Repositories;
 
 use App\Api\Models\Pet;
+use InvalidArgumentException;
+use RuntimeException;
 use SimpleXMLElement;
+use Tracy\Debugger;
 
 class PetRepository
 {
@@ -14,67 +17,240 @@ class PetRepository
         $this->filePath = $filePath;
     }
 
-    public function findById(int $id): ?Pet
+    public function findById(int $id): Pet
     {
         if (!file_exists($this->filePath)) {
             throw new \RuntimeException("XML file not found.");
         }
 
-        // Load XML file
-        $xml = simplexml_load_file($this->xmlFilePath);
+        $xml = simplexml_load_file($this->filePath);
 
-        // Search for the pet with the matching ID
         foreach ($xml->pet as $petNode) {
-            if ((int)$petNode->id === $id) {
+            if ((int) $petNode->id == $id) {
+                Debugger::log($petNode, Debugger::INFO);
                 // Convert XML node to Pet object
                 return Pet::createFromXml($petNode);
             }
         }
 
-        return null;
+        throw new InvalidArgumentException("Invalid Pet ID.");
     }
 
-    public function save(Pet $pet): void
+    public function findByStatus(string $status): array
     {
-        $xml = $this->petToXml($pet);
-        $xml->asXML($this->filePath);
+        if (!file_exists($this->filePath)) {
+            throw new RuntimeException("XML file not found.");
+        }
+
+        // Load XML file
+        $xml = simplexml_load_file($this->filePath);
+
+        $pets = [];
+        foreach ($xml->pet as $petNode) {
+            if ((string)$petNode->status === $status) {
+                // Convert XML node to Pet object
+                $pets[] = Pet::createFromXml($petNode);
+            }
+        }
+
+        return $pets;
     }
 
-    public function update(Pet $pet): void
+    public function findByTags(array $tags): array
     {
-        $existingPet = $this->findById($pet->id);
+        if (!file_exists($this->filePath)) {
+            throw new \RuntimeException("XML file not found.");
+        }
 
-        $existingPet->overwriteFrom($pet);
+        $xml = simplexml_load_file($this->filePath);
 
-        $this->save($existingPet);
+        $pets = [];
+        foreach ($xml->pet as $petNode) {
+            foreach ($petNode->tags as $tag) {
+                if (in_array((string)$tag, $tags)) {
+                    // Convert XML node to Pet object
+                    $pets[] = Pet::createFromXml($petNode);
+                }
+            }
+        }
+
+        return $pets;
     }
 
-    private function petToXml(Pet $pet): SimpleXMLElement
+    public function saveXML($xml): bool
     {
-        $xml = new SimpleXMLElement('<pet/>');
+        return $xml->asXML($this->filePath);
+    }
 
-        $xml->addChild('id', $pet->id);
-        $xml->addChild('name', htmlspecialchars($pet->name));
+    public function addPetToXml(Pet $pet): Pet
+    {
+        if (!file_exists($this->filePath)) {
+            throw new RuntimeException("XML file not found.");
+        }
 
-        $category = $xml->addChild('category');
+        $xml = simplexml_load_file($this->filePath);
+
+        // Create the <pet> element as a child of <pets>
+        $petElement = $xml->addChild('pet');
+
+        $petElement->addChild('id', $pet->id);
+        $petElement->addChild('name', htmlspecialchars($pet->name));
+
+        $category = $petElement->addChild('category');
         $category->addChild('id', $pet->category->id);
         $category->addChild('name', htmlspecialchars($pet->category->name));
 
-        $photoUrls = $xml->addChild('photoUrls');
+        $photoUrls = $petElement->addChild('photoUrls');
         foreach ($pet->photoUrls as $url) {
             $photoUrls->addChild('photoUrl', htmlspecialchars($url));
         }
 
-        $tags = $xml->addChild('tags');
+        $tags = $petElement->addChild('tags');
         foreach ($pet->tags as $tag) {
             $tagElement = $tags->addChild('tag');
             $tagElement->addChild('id', $tag->id);
             $tagElement->addChild('name', htmlspecialchars($tag->name));
         }
 
-        $xml->addChild('status', htmlspecialchars($pet->status));
+        $petElement->addChild('status', htmlspecialchars($pet->status->value));
 
-        return $xml;
+        if (!$this->saveXml($xml)){
+            throw new RuntimeException("XML wasn't saved.");
+        };
+
+        return Pet::createFromXml($petElement);
+    }
+
+    public function updatePetInXml(Pet $pet): Pet
+    {
+        if (!file_exists($this->filePath)) {
+            throw new \RuntimeException("XML file not found.");
+        }
+
+        $xml = simplexml_load_file($this->filePath);
+
+        $foundPetNode = null;
+        foreach ($xml->pet as $petNode) {
+            if ((int) $petNode->id == $pet->id) {
+                $petNode->name = $pet->name;
+                $petNode->status = $pet->status->value;
+
+                $petNode->category->id = $pet->category->id;
+                $petNode->category->name = $pet->category->name;
+
+                unset($petNode->photoUrls);
+                unset($petNode->tags);
+
+                $photoUrls = $petNode->addChild('photoUrls');
+                foreach ($pet->photoUrls as $url) {
+                    $photoUrls->addChild('photoUrl', htmlspecialchars($url));
+                }
+
+                $tags = $petNode->addChild('tags');
+                foreach ($pet->tags as $tag) {
+                    $tagElement = $tags->addChild('tag');
+                    $tagElement->addChild('id', $tag->id);
+                    $tagElement->addChild('name', htmlspecialchars($tag->name));
+                }
+
+                $foundPetNode = $petNode;
+                break;
+            }
+        }
+
+        if (!$foundPetNode) {
+            throw new InvalidArgumentException("Invalid Pet ID.");
+        }
+
+        if (!$this->saveXml($xml)){
+            throw new RuntimeException("XML wasn't saved.");
+        };
+
+        return Pet::createFromXml($foundPetNode);
+    }
+
+    public function updatePetWithParametersInXml($parameters): Pet
+    {
+        if (!file_exists($this->filePath)) {
+            throw new \RuntimeException("XML file not found.");
+        }
+
+        $xml = simplexml_load_file($this->filePath);
+
+        $foundPetNode = null;
+        foreach ($xml->pet as $petNode) {
+            if ((int) $petNode->id == $parameters['id']) {
+                $petNode->name = $parameters['name'];
+                $petNode->status = $parameters['status'];
+
+                $foundPetNode = $petNode;
+                break;
+            }
+        }
+
+        if (!$foundPetNode) {
+            throw new InvalidArgumentException("Invalid Pet ID.");
+        }
+
+        if (!$this->saveXml($xml)){
+            throw new RuntimeException("XML wasn't saved.");
+        };
+
+        return Pet::createFromXml($foundPetNode);
+    }
+
+    public function deletePetFromXml($id): void
+    {
+        if (!file_exists($this->filePath)) {
+            throw new \RuntimeException("XML file not found.");
+        }
+
+        $xml = simplexml_load_file($this->filePath);
+
+        $nodeDeleted = false;
+        foreach ($xml->pet as $index => $petNode) {
+            if ((int) $petNode->id == $id) {
+                unset($xml->pet[$index]);
+
+                $nodeDeleted = true;
+                break;
+            }
+        }
+
+        if (!$nodeDeleted) {
+            throw new InvalidArgumentException("Invalid Pet ID.");
+        }
+
+        if (!$this->saveXml($xml)){
+            throw new RuntimeException("XML wasn't saved.");
+        };
+    }
+
+    public function addImageUrl($id, $url): void
+    {
+        if (!file_exists($this->filePath)) {
+            throw new \RuntimeException("XML file not found.");
+        }
+
+        $xml = simplexml_load_file($this->filePath);
+
+        $nodeDeleted = false;
+        foreach ($xml->pet as $petNode) {
+            if ((int) $petNode->id == $id) {
+                $petNode->photoUrls->addChild('photoUrl', htmlspecialchars($url));
+
+                $nodeDeleted = true;
+                break;
+            }
+        }
+
+        if (!$nodeDeleted) {
+            throw new InvalidArgumentException("Invalid Pet ID.");
+        }
+
+        if (!$this->saveXml($xml)){
+            throw new RuntimeException("XML wasn't saved.");
+        };
     }
 }
 

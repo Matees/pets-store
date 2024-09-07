@@ -19,11 +19,14 @@ final class RouterFactory
         $router
             ->withModule('Api')
                 ->withPath('pet')
-                    ->addRoute('', [
-                        'presenter' => 'Pet',
-                        'action' => 'create',
-                        'method' => 'post',
-                    ])
+//                    ->addRoute('<id>', 'Pet:detail')
+                    ->addRoute('findByStatus', 'Pet:findByStatus')
+                    ->addRoute('findByTags', 'Pet:findByTags')
+//                    ->addRoute('', 'Pet:create')
+//                    ->addRoute('', 'Pet:update')
+//                    ->addRoute('<id>', 'Pet:updateWithParameters')
+//                    ->addRoute('<id>', 'Pet:delete')
+                    ->addRoute('<id>/uploadImage', 'Pet:uploadImage')
                 ->end()
             ->end();
 
