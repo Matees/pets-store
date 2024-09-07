@@ -2,16 +2,15 @@
 
 namespace App\Api\Presenters\Pet;
 
-use App\Api\Models\Category;
 use App\Api\Models\Pet;
-use App\Api\Models\Tag;
 use App\Api\Repositories\PetRepository;
+use App\Api\Validators\PetValidator;
 use Nette\Application\UI\Presenter;
 
 class PetPresenter extends Presenter
 {
 
-    public function __construct(private PetRepository $repository) {
+    public function __construct(private readonly PetRepository $petRepository) {
         parent::__construct();
     }
 
@@ -20,18 +19,32 @@ class PetPresenter extends Presenter
         $requestBody = file_get_contents('php://input');
         $data = json_decode($requestBody, true);
 
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            $this->sendJson(['error' => 'Invalid JSON']);
-        }
+        // Validate JSON data
+        PetValidator::validate($data);
 
-        // Create the Pet model from the request data
-        $category = new Category($data['category']['id'], $data['category']['name']);
-        $tags = array_map(fn($tag) => new Tag($tag['id'], $tag['name']), $data['tags']);
-        $pet = new Pet($data['id'], $data['name'], $category, $data['photoUrls'], $tags, $data['status']);
+        // Create Pet from JSON
+        $pet = Pet::createFromJson($data);
 
         // Save the pet data to XML
-        $this->repository->save($pet);
+        $this->petRepository->save($pet);
 
-        $this->sendJson(['success' => 'Pet data saved to XML']);
+        $this->sendJson(['success' => 'Pet saved to XML']);
+    }
+
+    public function actionUpdate()
+    {
+        $requestBody = file_get_contents('php://input');
+        $data = json_decode($requestBody, true);
+
+        // Validate JSON data
+        PetValidator::validate($data);
+
+        // Create Pet from JSON
+        $pet = Pet::createFromJson($data);
+
+        // Save the pet data to XML
+        $this->petRepository->update($pet);
+
+        $this->sendJson(['success' => 'Pet saved to XML']);
     }
 }

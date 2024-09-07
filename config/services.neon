@@ -1,6 +1,3 @@
-parameters:
-    filePath: %appDir%/data/pet.xml
-
 services:
 	- App\Core\RouterFactory::createRouter
 	- App\Api\Repositories\PetRepository(%appDir%/data/pet.xml)
