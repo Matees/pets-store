@@ -2,9 +2,7 @@
 namespace App\Api\Models;
 
 use App\Api\Enums\PetStatus;
-use App\Api\Validators\PetValidator;
 use SimpleXMLElement;
-use Tracy\Debugger;
 
 class Pet
 {
