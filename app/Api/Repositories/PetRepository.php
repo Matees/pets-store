@@ -3,6 +3,8 @@
 namespace App\Api\Repositories;
 
 use App\Api\Models\Pet;
+use DOMDocument;
+use DOMXPath;
 use InvalidArgumentException;
 use RuntimeException;
 use SimpleXMLElement;
@@ -27,7 +29,6 @@ class PetRepository
 
         foreach ($xml->pet as $petNode) {
             if ((int) $petNode->id == $id) {
-                Debugger::log($petNode, Debugger::INFO);
                 // Convert XML node to Pet object
                 return Pet::createFromXml($petNode);
             }
@@ -84,6 +85,12 @@ class PetRepository
 
     public function addPetToXml(Pet $pet): Pet
     {
+        $existingPet = $this->findById($pet->id);
+
+        if ($existingPet) {
+            throw new RuntimeException('Pet already exists.');
+        }
+
         if (!file_exists($this->filePath)) {
             throw new RuntimeException("XML file not found.");
         }
@@ -208,9 +215,19 @@ class PetRepository
         $xml = simplexml_load_file($this->filePath);
 
         $nodeDeleted = false;
-        foreach ($xml->pet as $index => $petNode) {
+        foreach ($xml->pet as $petNode) {
             if ((int) $petNode->id == $id) {
-                unset($xml->pet[$index]);
+                $dom = new DOMDocument();
+                $dom->loadXML($xml->asXML());
+                $xpath = new DOMXPath($dom);
+
+                $nodes = $xpath->query("//pet[id='$id']");
+
+                foreach ($nodes as $node) {
+                    $node->parentNode->removeChild($node);
+                }
+
+                $xml = simplexml_load_string($dom->saveXML());
 
                 $nodeDeleted = true;
                 break;

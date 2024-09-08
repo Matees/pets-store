@@ -1,6 +1,7 @@
 services:
 	- App\Core\RouterFactory::createRouter
 	- App\Api\Repositories\PetRepository(%appDir%/data/pets.xml)
+	- App\Api\Repositories\OrderRepository(%appDir%/data/orders.xml)
 
 
 search:

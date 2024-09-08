@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Api\Presenters\Pet;
+namespace App\Api\Presenters;
 
 use App\Api\Models\Pet;
 use App\Api\Repositories\PetRepository;
@@ -14,19 +14,19 @@ use Tracy\Debugger;
 class PetPresenter extends Presenter
 {
 
+    CONST XML_FILE_NAME = '/pets.xml';
     public function __construct(private readonly PetRepository $petRepository) {
         parent::__construct();
 
-        $xmlDir = __DIR__.'/../../../data';
-        Debugger::log(is_dir($xmlDir), Debugger::INFO);
+        $xmlDir = __DIR__.'/../../data';
         if (!is_dir($xmlDir)) {
             mkdir($xmlDir, 0777, true);
         }
 
         Debugger::log($xmlDir, Debugger::INFO);
-        if (!file_exists($xmlDir . '/pets.xml')) {
+        if (!file_exists($xmlDir . self::XML_FILE_NAME)) {
             $xml = new SimpleXMLElement('<pets/>');
-            $xml->asXML($xmlDir . '/pets.xml');
+            $xml->asXML($xmlDir . self::XML_FILE_NAME);
         }
     }
 

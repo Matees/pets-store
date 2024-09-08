@@ -2,7 +2,7 @@
 
 namespace App\Api\Validators;
 
-use App\Api\Enums\Status;
+use App\Api\Enums\PetStatus;
 use InvalidArgumentException;
 
 class PetValidator
@@ -12,8 +12,8 @@ class PetValidator
 
     public static function validateStatus($status): void
     {
-        if (!is_string($status) || !Status::isValid($status)) {
-            $statuses = Status::getStatuses();
+        if (!is_string($status) || !PetStatus::isValid($status)) {
+            $statuses = PetStatus::getStatuses();
             throw new InvalidArgumentException("Invalid value for status. It must be one of: $statuses.");
         }
     }

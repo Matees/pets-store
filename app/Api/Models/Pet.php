@@ -1,7 +1,7 @@
 <?php
 namespace App\Api\Models;
 
-use App\Api\Enums\Status;
+use App\Api\Enums\PetStatus;
 use App\Api\Validators\PetValidator;
 use SimpleXMLElement;
 use Tracy\Debugger;
@@ -13,9 +13,9 @@ class Pet
     public Category $category;
     public array $photoUrls;
     public array $tags;
-    public Status $status;
+    public PetStatus $status;
 
-    public function __construct(int $id, string $name, Category $category, array $photoUrls, array $tags, Status $status)
+    public function __construct(int $id, string $name, Category $category, array $photoUrls, array $tags, PetStatus $status)
     {
         $this->id = $id;
         $this->name = $name;
@@ -27,7 +27,7 @@ class Pet
 
     public static function createFromJson(array $data): Pet
     {
-        $status = Status::from($data['status']);
+        $status = PetStatus::from($data['status']);
 
         $category = new Category($data['category']['id'], $data['category']['name']);
         $tags = array_map(function ($tagData) {

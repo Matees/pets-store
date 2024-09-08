@@ -7,7 +7,7 @@ application:
 		5xx: Error:Error5xx
 	mapping:
 	    *: App\UI\*\**Presenter
-	    Api: App\Api\Presenters\**Presenter
+	    Api: App\Api\Presenters\*Presenter
 
 
 database:
@@ -27,3 +27,4 @@ di:
 	export:
 		parameters: no
 		tags: no
+

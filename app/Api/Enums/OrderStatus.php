@@ -2,11 +2,11 @@
 
 namespace App\Api\Enums;
 
-enum Status: string
+enum OrderStatus: string
 {
-    case AVAILABLE = 'available';
-    case PENDING = 'pending';
-    case SOLD = 'sold';
+    case PLACED = 'placed';
+    case APPROVED = 'approved';
+    case DELIVERED = 'delivered';
 
     /**
      * Check if a given status is valid.
