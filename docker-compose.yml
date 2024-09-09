@@ -8,3 +8,11 @@ services:
       - "80:80"
     environment:
       DEBUG: 1
+  vue-app:
+    build:
+      dockerfile: ./docker/fe/Dockerfile
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./fe:/app
+      - /app/node_modules
