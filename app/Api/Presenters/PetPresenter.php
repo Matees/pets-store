@@ -4,6 +4,7 @@ namespace App\Api\Presenters;
 
 use App\Api\Models\Pet;
 use App\Api\Repositories\PetRepository;
+use App\Api\Traits\RequestMethodTrait;
 use App\Api\Validators\PetValidator;
 use Nette\Application\Responses\JsonResponse;
 use Nette\Application\UI\Presenter;
@@ -13,8 +14,27 @@ use Tracy\Debugger;
 
 class PetPresenter extends Presenter
 {
+    use RequestMethodTrait;
 
     CONST XML_FILE_NAME = '/pets.xml';
+    const ROUTES = [
+        'findByTags' => 'GET',
+        'findByStatus' => 'GET',
+        'create' => 'POST',
+        'update' => 'PUT',
+        'uploadImage' => 'POST',
+        'detail' => 'GET',
+        'updateWithParameters' => 'POST',
+        'delete' => 'DELETE',
+    ];
+
+    public function startup(): void
+    {
+        parent::startup();
+
+        $this->checkRequestMethod($this, self::ROUTES[$this->getParameter('action')]);
+    }
+
     public function __construct(private readonly PetRepository $petRepository) {
         parent::__construct();
 
@@ -110,11 +130,6 @@ class PetPresenter extends Presenter
 
     public function actionUploadImage($id)
     {
-        // Ensure the request is a POST request
-        if (!$this->getHttpRequest()->isMethod('POST')) {
-            $this->sendResponse(new JsonResponse(['error' => 'Invalid request method.'], 405));
-        }
-
         $file = $this->getHttpRequest()->getFile('image');
 
         if (!$file instanceof FileUpload || !$file->isOk()) {

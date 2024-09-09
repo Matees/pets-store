@@ -4,6 +4,7 @@ namespace App\Api\Presenters;
 
 use App\Api\Models\Order;
 use App\Api\Repositories\OrderRepository;
+use App\Api\Traits\RequestMethodTrait;
 use App\Api\Validators\OrderValidator;
 use Nette\Application\UI\Presenter;
 use SimpleXMLElement;
@@ -11,7 +12,24 @@ use SimpleXMLElement;
 class OrderPresenter extends Presenter
 {
 
+    use RequestMethodTrait;
+
     const XML_FILE_NAME = '/orders.xml';
+
+    const ROUTES = [
+        'create' => 'POST',
+        'inventory' => 'GET',
+        'detail' => 'GET',
+        'delete' => 'DELETE',
+    ];
+
+    public function startup(): void
+    {
+        parent::startup();
+
+        $this->checkRequestMethod($this, self::ROUTES[$this->getParameter('action')]);
+    }
+
 
     public function __construct(private readonly OrderRepository $orderRepository) {
         parent::__construct();
@@ -29,10 +47,6 @@ class OrderPresenter extends Presenter
 
     public function actionCreate()
     {
-        if (!$this->getRequest()->isMethod('POST')) {
-            $this->error('Invalid request method. Only POST is allowed.', 405);
-        }
-
         $requestBody = file_get_contents('php://input');
         $data = json_decode($requestBody, true);
 
@@ -52,10 +66,6 @@ class OrderPresenter extends Presenter
 
     public function actionDetail($id)
     {
-        if (!$this->getRequest()->isMethod('GET')) {
-            $this->error('Invalid request method. Only GET is allowed.', 405);
-        }
-
         $pet = $this->orderRepository->findById($id);
 
         $this->sendJson(['data' => $pet]);

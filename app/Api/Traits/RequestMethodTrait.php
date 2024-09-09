@@ -3,8 +3,6 @@
 namespace App\Api\Traits;
 
 use Nette\Application\UI\Presenter;
-use Nette\Http\IRequest;
-use Nette\Http\IResponse;
 
 trait RequestMethodTrait
 {

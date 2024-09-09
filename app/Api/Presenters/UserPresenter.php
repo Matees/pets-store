@@ -5,15 +5,31 @@ namespace App\Api\Presenters;
 use App\Api\Models\User;
 use App\Api\Repositories\UserRepository;
 use App\Api\Services\AuthenticationService;
+use App\Api\Traits\RequestMethodTrait;
 use App\Api\Validators\UserValidator;
 use Nette\Application\UI\Presenter;
 use SimpleXMLElement;
-use Tracy\Debugger;
 
 class UserPresenter extends Presenter
 {
+    use RequestMethodTrait;
 
     const XML_FILE_NAME = '/users.xml';
+    const ROUTES = [
+        'login' => 'GET',
+        'logout' => 'GET',
+        'createWithList' => 'POST',
+        'detail' => 'GET',
+        'delete' => 'DELETE',
+        'update' => 'PUT',
+    ];
+
+    public function startup(): void
+    {
+        parent::startup();
+
+        $this->checkRequestMethod($this, self::ROUTES[$this->getParameter('action')]);
+    }
 
     public function __construct(private readonly UserRepository $userRepository) {
         parent::__construct();
@@ -31,12 +47,6 @@ class UserPresenter extends Presenter
 
     public function actionCreate()
     {
-        Debugger::log('fdsa', Debugger::INFO);
-
-        if (!$this->getRequest()->isMethod('POST')) {
-            $this->error('Invalid request method. Only POST is allowed.', 405);
-        }
-
         $requestBody = file_get_contents('php://input');
         $data = json_decode($requestBody, true);
 
@@ -58,10 +68,6 @@ class UserPresenter extends Presenter
     {
         if (!AuthenticationService::isLoggedIn()) {
             $this->error('Not logged in.', 401);
-        }
-
-        if (!$this->getRequest()->isMethod('GET')) {
-            $this->error('Invalid request method. Only GET is allowed.', 405);
         }
 
         $user = $this->userRepository->findByName($name);
@@ -126,10 +132,6 @@ class UserPresenter extends Presenter
         $username = $this->getParameter('username');
         $password = $this->getParameter('password');
 
-        if (!$this->getRequest()->isMethod('GET')) {
-            $this->error('Invalid request method. Only POST is allowed.', 405);
-        }
-
         $logged = (new AuthenticationService())->login($username, $password, $this->userRepository->getValidUsers());
 
         $this->sendJson(['data' => $logged]);
@@ -137,12 +139,6 @@ class UserPresenter extends Presenter
 
     public function actionLogout()
     {
-        Debugger::log($_SESSION, Debugger::INFO);
-
-        if (!$this->getRequest()->isMethod('GET')) {
-            $this->error('Invalid request method. Only POST is allowed.', 405);
-        }
-
         (new AuthenticationService())->logout();
 
         $this->sendJson(['success' => 'Logged out']);
