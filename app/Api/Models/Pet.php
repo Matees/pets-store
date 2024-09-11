@@ -3,6 +3,7 @@ namespace App\Api\Models;
 
 use App\Api\Enums\PetStatus;
 use SimpleXMLElement;
+use Tracy\Debugger;
 
 class Pet
 {
@@ -36,7 +37,7 @@ class Pet
             $data['id'],
             $data['name'],
             $category,
-            $data['photoUrls'],
+            $data['photoUrls']['photoUrl'],
             $tags,
             $status
         );
@@ -44,9 +45,31 @@ class Pet
 
     public static function createFromXml(SimpleXMLElement $xml): Pet
     {
+        Debugger::log($xml, Debugger::INFO);
+
         $json = json_encode($xml);
         $data = json_decode($json, true);
 
+        Debugger::log($data['photoUrls']['photoUrl'], Debugger::INFO);
+
         return self::createFromJson($data);
     }
+
+    public function toString(): string
+    {
+    $tags = array_map(fn($tag) => $tag->name, $this->tags);
+
+
+    return sprintf(
+        "Pet ID: %d, Name: %s, Category: %s, PhotoUrls: %s, Tags: %s, Status: %s",
+        $this->id,
+        $this->name,
+        $this->category->name,
+        implode(',', $this->photoUrls),
+        implode(',', $tags),
+        $this->status->value
+    );
+    }
+
+
 }

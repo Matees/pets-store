@@ -1,7 +1,8 @@
 <template>
   <div>
+    RESULT: {{message}}
     <h2>Pet Form</h2>
-    <form @submit.prevent="handleSubmit">
+<!--    <form @submit.prevent="handleSubmit">-->
       <div>
         <label for="id">ID:</label>
         <input type="number" id="id" v-model.number="pet.id" />
@@ -23,7 +24,7 @@
       </div>
 
       <div>
-        <label for="photoUrls">Photo URLs:</label>
+        <label for="photoUrls">Photo URLs (press Enter): </label>
         <input type="text" id="photoUrls" v-model="photoUrlInput" @keyup.enter="addPhotoUrl" />
         <ul>
           <li v-for="(url, index) in pet.photoUrls" :key="index">{{ url }}</li>
@@ -47,13 +48,18 @@
         </select>
       </div>
 
-      <button type="submit">Submit</button>
-    </form>
+    <button @click="putPet">Send</button>
+    <button @click="clearForm">Clear Form</button>
+<!--    </form>-->
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref } from 'vue';
+import axios from 'axios';
+import { useNotification } from "@kyvg/vue3-notification";
+
+const { notify }  = useNotification()
 
 // Define the types for pet data
 interface Tag {
@@ -85,6 +91,8 @@ const pet = ref<Pet>({
   status: 'available',
 });
 
+const message = ref<string>('');
+
 // Form input bindings
 const photoUrlInput = ref('');
 const tagInput = ref('');
@@ -104,10 +112,28 @@ function addTag() {
   }
 }
 
-function handleSubmit() {
-  console.log('Submitted Pet Data:', pet.value);
-  // You can send `pet.value` to an API endpoint here
-}
+const putPet = async () => {
+  try {
+    const response = await axios.put('/pet', pet.value);
+    message.value = response.data
+  } catch (error) {
+    cmessage.value = error.message;
+  }
+};
+
+const clearForm = () => {
+  pet.value = {
+    id: null,
+    name: '',
+    category: { id: null, name: '' },
+    photoUrls: [],
+    tags: [],
+    status: 'available',
+  };
+  photoUrlInput.value = '';
+  tagInput.value = '';
+};
+
 </script>
 
 <style scoped>

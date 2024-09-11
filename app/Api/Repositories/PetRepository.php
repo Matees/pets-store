@@ -7,7 +7,6 @@ use DOMDocument;
 use DOMXPath;
 use InvalidArgumentException;
 use RuntimeException;
-use SimpleXMLElement;
 use Tracy\Debugger;
 
 class PetRepository
@@ -19,7 +18,7 @@ class PetRepository
         $this->filePath = $filePath;
     }
 
-    public function findById(int $id): Pet
+    public function findById(int $id, $exists = false): ?Pet
     {
         if (!file_exists($this->filePath)) {
             throw new \RuntimeException("XML file not found.");
@@ -34,7 +33,11 @@ class PetRepository
             }
         }
 
-        throw new InvalidArgumentException("Invalid Pet ID.");
+        if ($exists) {
+            return null;
+        }
+
+        throw new InvalidArgumentException("Invalid Pet ID.", 401);
     }
 
     public function findByStatus(string $status): array
@@ -85,7 +88,7 @@ class PetRepository
 
     public function addPetToXml(Pet $pet): Pet
     {
-        $existingPet = $this->findById($pet->id);
+        $existingPet = $this->findById($pet->id, true);
 
         if ($existingPet) {
             throw new RuntimeException('Pet already exists.');

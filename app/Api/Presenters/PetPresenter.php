@@ -5,16 +5,19 @@ namespace App\Api\Presenters;
 use App\Api\Models\Pet;
 use App\Api\Repositories\PetRepository;
 use App\Api\Traits\RequestMethodTrait;
+use App\Api\Traits\ResponseTrait;
 use App\Api\Validators\PetValidator;
+use Nette\Application;
 use Nette\Application\Responses\JsonResponse;
 use Nette\Application\UI\Presenter;
+use Nette\Caching\Storages\DevNullStorage;
 use Nette\Http\FileUpload;
 use SimpleXMLElement;
 use Tracy\Debugger;
 
 class PetPresenter extends Presenter
 {
-    use RequestMethodTrait;
+    use RequestMethodTrait, ResponseTrait;
 
     CONST XML_FILE_NAME = '/pets.xml';
     const ROUTES = [
@@ -34,6 +37,7 @@ class PetPresenter extends Presenter
 
         $this->checkRequestMethod($this, self::ROUTES[$this->getParameter('action')]);
     }
+
 
     public function __construct(private readonly PetRepository $petRepository) {
         parent::__construct();
@@ -60,13 +64,18 @@ class PetPresenter extends Presenter
             throw new \InvalidArgumentException('Invalid JSON format: ' . json_last_error_msg());
         }
 
-        PetValidator::validateRequiredFields($data);
+        $createdPet = null;
+        try {
+            PetValidator::validateRequiredFields($data);
 
-        $pet = Pet::createFromJson($data);
+            $pet = Pet::createFromJson($data);
 
-        $this->petRepository->addPetToXml($pet);
+            $createdPet = $this->petRepository->addPetToXml($pet);
+        } catch (\Exception $exception) {
+            $this->sendError($exception->getCode(), $exception->getMessage());
+        }
 
-        $this->sendJson(['success' => 'Pet successfully saved']);
+        $this->sendSuccess(200, $createdPet->toString());
     }
 
     public function actionUpdate()
@@ -79,42 +88,62 @@ class PetPresenter extends Presenter
             throw new \InvalidArgumentException('Invalid JSON format: ' . json_last_error_msg());
         }
 
-        PetValidator::validateRequiredFields($data);
+        $updatedPet = null;
+        try {
+            PetValidator::validateRequiredFields($data, update: true);
 
-        $pet = Pet::createFromJson($data);
+            $pet = Pet::createFromJson($data);
 
-        $this->petRepository->updatePetInXml($pet);
+            $updatedPet = $this->petRepository->updatePetInXml($pet);
+        } catch (\Exception $exception) {
+            $this->sendError($exception->getCode(), $exception->getMessage());
+        }
 
-        $this->sendJson(['success' => 'Pet successfully updated to XML']);
+        $this->sendSuccess(200, $updatedPet->toString());
     }
 
     public function actionDetail($id)
     {
-        $pet = $this->petRepository->findById($id);
-
-        $this->sendJson(['data' => $pet]);
+        $pet = null;
+        try {
+            $pet = $this->petRepository->findById($id);
+        }catch (\Exception $e) {
+            $this->sendError($e->getCode(), $e->getMessage());
+        }
+        $this->sendSuccess(200, json_decode(json_encode($pet), true));
     }
 
     public function actionFindByStatus()
     {
         $status = $this->getParameter('status');
 
-        PetValidator::validateStatus($status);
+        $pets = [];
+        try {
+            PetValidator::validateStatus($status);
 
-        $pets = $this->petRepository->findByStatus($status);
+            $pets = $this->petRepository->findByStatus($status);
+        } catch (\Exception $exception) {
+            $this->sendError($exception->getCode(), $exception->getMessage());
+        }
 
-        $this->sendJson(['data' => $pets]);
+        $this->sendSuccess(200, json_encode(array_map(fn (Pet $pet) =>  $pet->toString(), $pets)));
     }
 
     public function actionFindByTags()
     {
-        $tags = $this->getParameter('tags');
+        $tags = array_column($this->getParameters(),'tags');
 
-        PetValidator::validateTags($tags);
+        Debugger::log($this->getParameters(), Debugger::INFO);
+        $pets = [];
+        try {
+            PetValidator::validateTags($tags);
 
-        $pets = $this->petRepository->findByTags($tags);
+            $pets = $this->petRepository->findByTags($tags);
+        } catch (\Exception $exception) {
+            $this->sendError($exception->getCode(), $exception->getMessage());
+        }
 
-        $this->sendJson(['data' => $pets]);
+        $this->sendSuccess(200, json_encode(array_map(fn (Pet $pet) =>  $pet->toString(), $pets)));
     }
 
     public function actionUpdateWithParameters()
