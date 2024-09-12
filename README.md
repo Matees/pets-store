@@ -21,3 +21,5 @@ Napríklad, ak chcete upraviť model zvieratka, stačí upraviť model, pridať 
 
 XML súbory sa ukladajú do samostatných súborov v adresári /app/data, kde je možné prezrieť aktuálny stav.
 Obrázky sa ukladajú do priečinka www a zobrazujú sa pri dopyte na konkrétne zvieratko.
+
+Kedze som nepouzil package tak niektore endpointy som musel trocha pozmenit aby sa medzi sebou nebili.
