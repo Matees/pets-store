@@ -15,11 +15,7 @@
 <script lang="ts" setup>
 import { ref } from 'vue';
 import axios from 'axios';
-import { useNotification } from "@kyvg/vue3-notification";
 
-const { notify }  = useNotification()
-
-// Define the types for pet data
 interface Order {
   id: number | null;
   petId: number | null;

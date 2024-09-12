@@ -4,14 +4,10 @@
 // Read more: https://github.com/vuejs/core/pull/3399
 export {}
 
-import type { FunctionalComponent } from 'vue';
-import type { Notifications } from '@kyvg/vue3-notification';
-
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-    Notifications: FunctionalComponent<Notifications>;
   }
 }

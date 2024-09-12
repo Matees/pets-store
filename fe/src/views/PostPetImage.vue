@@ -20,10 +20,6 @@
 <script lang="ts" setup>
 import { ref } from 'vue';
 import axios from 'axios';
-import { useNotification } from "@kyvg/vue3-notification";
-
-const { notify }  = useNotification()
-
 interface Pet {
   id: number | null;
   name: string;
