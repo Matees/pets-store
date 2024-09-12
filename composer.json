@@ -1,5 +1,5 @@
 {
-	"name": "nette/web-project",
+	"name": "nette/pets-store",
 	"description": "Nette: Standard Web Project",
 	"keywords": ["nette"],
 	"type": "project",
