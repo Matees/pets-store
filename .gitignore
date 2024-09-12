@@ -1,4 +1,6 @@
 /vendor
-/temp
-/log
+log/*
+!log/.gitkeep
+temp/*
+!temp/.gitkeep
 /composer.lock

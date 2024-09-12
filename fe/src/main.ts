@@ -8,7 +8,6 @@ import axios from 'axios';
 const app = createApp(App)
 
 app.use(router)
-app.use(Notifications)
 
 axios.defaults.baseURL = 'http://localhost';
 axios.defaults.withCredentials = true;
