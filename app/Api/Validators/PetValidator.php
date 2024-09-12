@@ -4,6 +4,7 @@ namespace App\Api\Validators;
 
 use App\Api\Enums\PetStatus;
 use InvalidArgumentException;
+use Nette\Http\FileUpload;
 
 class PetValidator
 {
@@ -18,8 +19,12 @@ class PetValidator
         }
     }
 
-    public static function validateTags(array $tags): void
+    public static function validateTags(array $tags, $update = false): void
     {
+        if (!$update && empty($tags)) {
+            throw new InvalidArgumentException('Tags must not be empty.');
+        }
+
         foreach ($tags as $tag) {
             if (!isset($tag['id'], $tag['name'])) {
                 throw new InvalidArgumentException('Each tag must have "id" and "name".');
@@ -29,26 +34,38 @@ class PetValidator
                 throw new InvalidArgumentException('Invalid value for "tag.id". It must be an integer.');
             }
 
-            if (!is_string($tag['name'])) {
+            if (!is_string($tag['name']) || (!$update && empty($tag['name']))) {
                 throw new InvalidArgumentException('Invalid value for "tag.name". It must be a string.');
             }
         }
     }
 
-    public static function validateCategory(array $category): void
+    public static function validateCategory(array $category, $update): void
     {
-        if (!isset($category['id'], $category['name'])) {
-            throw new InvalidArgumentException('Invalid category data. Both "id" and "name" are required.');
+        if (!isset($category['name'])) {
+            throw new InvalidArgumentException('Invalid category data. "name" is required.');
         }
 
-        if (!is_int($category['id'])) {
-            throw new InvalidArgumentException('Invalid value for "category.id". It must be an integer.');
-        }
-
-        if (!is_string($category['name'])) {
+        if (!is_string($category['name']) || (!$update && empty($category['name']))) {
             throw new InvalidArgumentException('Invalid value for "category.name". It must be a string.');
         }
     }
+
+    public static function validateImage($file): void
+    {
+        if (!$file instanceof FileUpload || !$file->isOk()) {
+            throw new InvalidArgumentException('No file uploaded or file is not valid.');
+        }
+
+        if ($file->getContentType() !== 'image/jpeg' && $file->getContentType() !== 'image/png') {
+            throw new InvalidArgumentException('Invalid file type. Only JPEG and PNG are allowed.');
+        }
+
+        if ($file->getSize() > 5 * 1024 * 1024) { // 5 MB limit
+            throw new InvalidArgumentException('File size exceeds the limit of 5 MB.');
+        }
+    }
+
 
     /**
      * Validate the presence of required fields in the pet data and validate them.
@@ -72,10 +89,10 @@ class PetValidator
 
             match ($field) {
                 'id' => is_int($data[$field]) ? true : throw new InvalidArgumentException("Invalid value for $field. It must be an integer."),
-                'name' => is_string($data[$field]) && !empty($data[$field]) ? true : throw new InvalidArgumentException("Invalid value for $field. It must be an string."),
-                'category' => self::validateCategory($data[$field]),
-                'photoUrls' => array_filter($data[$field], 'is_string') === $data[$field] ? true : throw new InvalidArgumentException('Invalid value for "photoUrls". It must be an array of strings.'),
-                'tags' => self::validateTags($data[$field]),
+                'name' => ($update && is_string($data[$field])) || (!$update && is_string($data[$field]) && !empty($data[$field])) ? true : throw new InvalidArgumentException("Invalid value for $field. It must be an string."),
+                'category' => self::validateCategory($data[$field], $update),
+                'photoUrls' => !$update ? (!empty($data[$field]) ? (array_filter($data[$field], 'is_string') === $data[$field] ? true : throw new InvalidArgumentException('Invalid value for "photoUrls". It must be an array of strings.')) : throw new InvalidArgumentException('Invalid value for "photoUrls". It must be an array of strings.')) : (array_filter($data[$field], 'is_string') === $data[$field] ? true : throw new InvalidArgumentException('Invalid value for "photoUrls". It must be an array of strings.')),
+                'tags' => self::validateTags($data[$field], $update),
                 'status' => self::validateStatus($data[$field]),
                 default => null
             };

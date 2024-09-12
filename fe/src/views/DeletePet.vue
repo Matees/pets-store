@@ -40,7 +40,7 @@ const message = ref<string>('');
 const fetchPetData = async () => {
   try {
     if (pet.value.id) {
-      const response = await axios.delete('/pet/' + pet.value.id);
+      const response = await axios.delete('/pet/delete/' + pet.value.id);
       message.value = response.data;
     } else {
       message.value = 'Please enter id.'

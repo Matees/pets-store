@@ -42,6 +42,28 @@ class Order
         $json = json_encode($xml);
         $data = json_decode($json, true);
 
-        return self::createFromJson($data);
+        $status = OrderStatus::from($data['status']);
+
+
+        return new Order(
+            $data['id'],
+            $data['petId'],
+            is_array($data['quantity']) ? '' : $data['quantity'],
+            is_array($data['shipDate']) ? '' : $data['shipDate'],
+            $status,
+            is_array($data['complete']) ? false : $data['complete'],
+        );
+    }
+
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'petId' => $this->petId,
+            'quantity' => $this->quantity,
+            'shipDate' => $this->shipDate,
+            'status' => $this->status->value,
+            'complete' => $this->complete
+        ];
     }
 }

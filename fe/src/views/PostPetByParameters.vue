@@ -60,8 +60,12 @@ const message = ref<string>('');
 
 const fetchPetData = async () => {
   try {
-    const response = await axios.post('/pet/' + pet.value.id + '/' + '?name=' + pet.value.name + '&status=' + pet.value.status);
-    message.value = response.data;
+    if (pet.value.id){
+      const response = await axios.post('/pet/updateParams/' + pet.value.id + '/' + '?name=' + pet.value.name + '&status=' + pet.value.status);
+      message.value = response.data;
+    } else {
+      message.value = 'ID must not be empty.'
+    }
   } catch (error) {
     message.value = error.message;
   }

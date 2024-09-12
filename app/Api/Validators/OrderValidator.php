@@ -3,9 +3,7 @@
 namespace App\Api\Validators;
 
 use App\Api\Enums\OrderStatus;
-use App\Api\Enums\PetStatus;
 use InvalidArgumentException;
-
 class OrderValidator
 {
 
@@ -25,17 +23,24 @@ class OrderValidator
      * @param array $data
      * @param array $requiredFields
      */
-    public static function validateRequiredFields(array $data, array $requiredFields = self::REQUIRED_FIELDS): void
+    public static function validateRequiredFields(array $data, array $requiredFields = self::REQUIRED_FIELDS, $update = false): void
     {
+        if ($update) {
+            $inputPropertiesNames = array_keys($data);
+            if ($invalidProperties = array_diff($inputPropertiesNames, $requiredFields)) {
+                throw new InvalidArgumentException(sprintf('Invalid attribute: %s', implode(', ', $invalidProperties)));
+            }
+        }
 
         foreach ($requiredFields as $field) {
-            if (!isset($data[$field])) {
+            if (!isset($data[$field]) && !$update) {
                 throw new InvalidArgumentException(sprintf('Missing required field: %s', $field));
             }
 
             match ($field) {
-                'id', 'petId', 'quantity' => is_int($data[$field]) ? true : throw new InvalidArgumentException("Invalid value for $field. It must be an integer."),
-                'shipData' => is_string($data[$field]) ? true : throw new InvalidArgumentException("Invalid value for $field. It must be an string."),
+                'id', 'petId' => is_int($data[$field]) ? true : throw new InvalidArgumentException("Invalid value for $field. It must be an integer."),
+                'quantity' => is_int($data[$field]) || (!$update && !empty($data[$field])) ? true : throw new InvalidArgumentException("Invalid value for $field. It must be an integer."),
+                'shipDate' => ($update && is_string($data[$field])) || (!$update && is_string($data[$field]) && !empty($data[$field])) ? true : throw new InvalidArgumentException("Invalid value for $field. It must be datetime."),
                 'status' => self::validateStatus($data[$field]),
                 'complete' => is_bool($data[$field]) ? true : throw new InvalidArgumentException("Invalid value for $field. It must be an bool."),
                 default => null

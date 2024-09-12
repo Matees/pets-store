@@ -12,5 +12,6 @@ app.use(router)
 app.use(Notifications)
 
 axios.defaults.baseURL = 'http://localhost';
+axios.defaults.withCredentials = true;
 
 app.mount('#app')

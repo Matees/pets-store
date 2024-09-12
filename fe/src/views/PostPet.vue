@@ -33,7 +33,7 @@
       </div>
 
       <div>
-        <label for="tags">Tags:</label>
+        <label for="tags">Tags (press Enter):</label>
         <input type="text" id="tagInput" v-model="tagInput" @keyup.enter="addTag" />
         <ul>
           <li v-for="(tag, index) in pet.tags" :key="index">{{ tag.name }}</li>
@@ -115,7 +115,7 @@ function addTag() {
 
 const postPet = async () => {
   try {
-    const response = await axios.post('/pet', pet.value);
+    const response = await axios.post('/pet/create', pet.value);
     message.value = response.data;
   } catch (error) {
     message.value = error.message;

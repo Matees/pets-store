@@ -7,13 +7,9 @@ use App\Api\Repositories\PetRepository;
 use App\Api\Traits\RequestMethodTrait;
 use App\Api\Traits\ResponseTrait;
 use App\Api\Validators\PetValidator;
-use Nette\Application;
-use Nette\Application\Responses\JsonResponse;
+use InvalidArgumentException;
 use Nette\Application\UI\Presenter;
-use Nette\Caching\Storages\DevNullStorage;
-use Nette\Http\FileUpload;
 use SimpleXMLElement;
-use Tracy\Debugger;
 
 class PetPresenter extends Presenter
 {
@@ -47,7 +43,6 @@ class PetPresenter extends Presenter
             mkdir($xmlDir, 0777, true);
         }
 
-        Debugger::log($xmlDir, Debugger::INFO);
         if (!file_exists($xmlDir . self::XML_FILE_NAME)) {
             $xml = new SimpleXMLElement('<pets/>');
             $xml->asXML($xmlDir . self::XML_FILE_NAME);
@@ -75,7 +70,7 @@ class PetPresenter extends Presenter
             $this->sendError($exception->getCode(), $exception->getMessage());
         }
 
-        $this->sendSuccess(200, $createdPet->toString());
+        $this->sendSuccess(200, $createdPet->toArray());
     }
 
     public function actionUpdate()
@@ -99,7 +94,7 @@ class PetPresenter extends Presenter
             $this->sendError($exception->getCode(), $exception->getMessage());
         }
 
-        $this->sendSuccess(200, $updatedPet->toString());
+        $this->sendSuccess(200, $updatedPet->toArray());
     }
 
     public function actionDetail($id)
@@ -110,7 +105,7 @@ class PetPresenter extends Presenter
         }catch (\Exception $e) {
             $this->sendError($e->getCode(), $e->getMessage());
         }
-        $this->sendSuccess(200, json_decode(json_encode($pet), true));
+        $this->sendSuccess(200, $pet->toArray());
     }
 
     public function actionFindByStatus()
@@ -126,71 +121,83 @@ class PetPresenter extends Presenter
             $this->sendError($exception->getCode(), $exception->getMessage());
         }
 
-        $this->sendSuccess(200, json_encode(array_map(fn (Pet $pet) =>  $pet->toString(), $pets)));
+        $this->sendSuccess(200, json_encode(array_map(fn (Pet $pet) =>  $pet->toArray(), $pets)));
     }
 
     public function actionFindByTags()
     {
-        $tags = array_column($this->getParameters(),'tags');
+        $queryString = $_SERVER['QUERY_STRING'];
+        $queryParams = explode('&', $queryString);
 
-        Debugger::log($this->getParameters(), Debugger::INFO);
+        $tags = [];
+        foreach ($queryParams as $param) {
+            if (str_starts_with($param, 'tags=')) {
+                $tagValue = urldecode(substr($param, strlen('tags=')));
+
+                $tags[] = $tagValue;
+            }
+        }
+
         $pets = [];
         try {
-            PetValidator::validateTags($tags);
+            if (empty($tags)) {
+                throw new InvalidArgumentException('Tags must not be empty');
+            }
 
             $pets = $this->petRepository->findByTags($tags);
         } catch (\Exception $exception) {
             $this->sendError($exception->getCode(), $exception->getMessage());
         }
 
-        $this->sendSuccess(200, json_encode(array_map(fn (Pet $pet) =>  $pet->toString(), $pets)));
+        $this->sendSuccess(200, json_encode(array_map(fn (Pet $pet) =>  $pet->toArray(), $pets)));
     }
 
     public function actionUpdateWithParameters()
     {
         $parameters = $this->getParameters();
 
-        PetValidator::validateRequiredFields($parameters, ['name', 'status']);
+        try {
+            PetValidator::validateRequiredFields($parameters, ['name', 'status']);
 
-        $this->petRepository->updatePetWithParametersInXml($parameters);
+            $updatedPet = $this->petRepository->updatePetWithParametersInXml($parameters);
+        } catch (\Exception $exception) {
+            $this->sendError($exception->getCode(), $exception->getMessage());
+        }
 
-        $this->sendJson(['data' => 'Pet successfully updated to XML']);
+        $this->sendSuccess(200, $updatedPet->toArray());
     }
 
     public function actionUploadImage($id)
     {
         $file = $this->getHttpRequest()->getFile('image');
 
-        if (!$file instanceof FileUpload || !$file->isOk()) {
-            $this->sendResponse(new JsonResponse(['error' => 'No file uploaded or file is not valid.'], 400));
-        }
+        try {
+            PetValidator::validateImage($file);
 
-        // Validate file type and size
-        if ($file->getContentType() !== 'image/jpeg' && $file->getContentType() !== 'image/png') {
-            $this->sendResponse(new JsonResponse(['error' => 'Invalid file type. Only JPEG and PNG are allowed.'], 400));
-        }
+            // Save the file
+            $uploadDir = __DIR__ . '/../../../www/uploads/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
 
-        if ($file->getSize() > 5 * 1024 * 1024) { // 5 MB limit
-            $this->sendResponse(new JsonResponse(['error' => 'File size exceeds the limit of 5 MB.'], 400));
+            $updatedPet = $this->petRepository->addImageUrl($id, $this->getHttpRequest()->getUrl()->getBaseUrl() . 'uploads/' . $file->getSanitizedName());
+            $file->move($uploadDir . $file->getSanitizedName());
+        } catch (\Exception $exception) {
+            $this->sendError($exception->getCode(), $exception->getMessage());
         }
-
-        // Save the file
-        $uploadDir = __DIR__ . '/../../../www/uploads/';
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
-        }
-
-        $this->petRepository->addImageUrl($id, $this->getHttpRequest()->getUrl()->getBaseUrl() . 'uploads/' . $file->getSanitizedName());
-        $file->move($uploadDir . $file->getSanitizedName());
 
         // Send a success response
-        $this->sendResponse(new JsonResponse(['message' => 'File uploaded successfully.']));
+        $this->sendSuccess(200, $updatedPet->toArray());
     }
 
     public function actionDelete($id)
     {
-        $this->petRepository->deletePetFromXml($id);
+        try{
+            $this->petRepository->deletePetFromXml($id);
+        } catch (\Exception $exception) {
+            $this->sendError($exception->getCode(), $exception->getMessage());
+        }
 
-        $this->sendJson(['data' => 'Pet successfully deleted from XML']);
+        $this->sendSuccess(200, 'Pet successfully deleted from XML');
     }
 }

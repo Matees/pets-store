@@ -3,13 +3,11 @@
 namespace App\Api\Repositories;
 
 use App\Api\Models\Order;
-use App\Api\Models\Pet;
 use DOMDocument;
 use DOMXPath;
 use InvalidArgumentException;
 use RuntimeException;
 use SimpleXMLElement;
-use Tracy\Debugger;
 
 class OrderRepository
 {

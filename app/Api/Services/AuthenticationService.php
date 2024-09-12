@@ -3,7 +3,6 @@
 namespace App\Api\Services;
 
 use App\Api\Models\User;
-use Tracy\Debugger;
 
 class AuthenticationService
 {
@@ -23,7 +22,6 @@ class AuthenticationService
             if ($username === $user->username && $password === $user->password) {
                 $_SESSION['logged_in'] = 1; // Set a session variable to indicate the user is logged in
                 $_SESSION['username'] = $username;
-                Debugger::log($_SESSION, Debugger::INFO);
                 return true;
             }
         }
@@ -51,6 +49,11 @@ class AuthenticationService
 
     public static function isLoggedIn()
     {
+        if (session_status() === PHP_SESSION_NONE) {
+
+            session_start();
+        }
+
         return isset($_SESSION['logged_in']);
     }
 }

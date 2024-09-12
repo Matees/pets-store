@@ -9,6 +9,11 @@
         <option value="sold">Sold</option>
       </select>
     </div>
+    <div  v-if="pet.photoUrls.length > 0">
+      <div v-for="(url, index) in pet.photoUrls" :key="index" style="margin-bottom: 10px;">
+        <img :src="url" style="max-width: 300px; margin-top: 10px;" />
+      </div>
+    </div>
     <button @click="fetchPetData">Fetch Pet Data</button>
   </div>
 </template>
@@ -41,11 +46,22 @@ const pet = ref<Pet>({
 
 const message = ref<string>('');
 
+function addPhotoUrl(url) {
+  if (url.trim()) {
+    pet.value.photoUrls.push(url.trim());
+  }
+}
+
 const fetchPetData = async () => {
   try {
     if (pet.value.status) {
       const response = await axios.get('/pet/findByStatus?status=' + pet.value.status);
       message.value = response.data;
+      if (response.data.message.photoUrls) {
+        response.data.message.photoUrls.forEach((url, index) => {
+          addPhotoUrl(url);
+        });
+      }
     } else {
       message.value = 'Please enter status.'
     }

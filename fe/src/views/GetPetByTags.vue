@@ -2,11 +2,17 @@
   <div>
     RESULT: {{message}}
     <div>
-      <label for="tags">Tags:</label>
+      <label for="tags">Tags (Press Enter):</label>
       <input type="text" id="tagInput" v-model="tagInput" @keyup.enter="addTag" />
       <ul>
         <li v-for="(tag, index) in pet.tags" :key="index">{{ tag.name }}</li>
       </ul>
+    </div>
+
+    <div  v-if="pet.photoUrls.length > 0">
+      <div v-for="(url, index) in pet.photoUrls" :key="index" style="margin-bottom: 10px;">
+        <img :src="url" style="max-width: 300px; margin-top: 10px;" />
+      </div>
     </div>
     <button @click="fetchPetData">Fetch Pet Data</button>
   </div>
@@ -15,11 +21,7 @@
 <script lang="ts" setup>
 import { ref } from 'vue';
 import axios from 'axios';
-import { useNotification } from "@kyvg/vue3-notification";
 
-const { notify }  = useNotification()
-
-// Define the types for pet data
 interface Tag {
   id: number;
   name: string;
@@ -58,6 +60,12 @@ function addTag() {
   }
 }
 
+function addPhotoUrl(url) {
+  if (url.trim()) {
+    pet.value.photoUrls.push(url.trim());
+  }
+}
+
 const fetchPetData = async () => {
   try {
     if (pet.value.tags) {
@@ -66,6 +74,11 @@ const fetchPetData = async () => {
       const tags = formattedTags.join('&');
       const response = await axios.get('/pet/findByTags?' + tags );
       message.value = response.data;
+      if (response.data.message.photoUrls) {
+        response.data.message.photoUrls.forEach((url, index) => {
+          addPhotoUrl(url);
+        });
+      }
     } else {
       message.value = 'Please choose tags.'
     }

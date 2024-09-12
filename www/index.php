@@ -7,7 +7,7 @@ declare(strict_types=1);
 header('Access-Control-Allow-Origin: http://localhost:3001'); // Allow all origins, you can restrict to a specific origin if needed
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS'); // Allow the methods you need
 header('Access-Control-Allow-Headers: Content-Type, Authorization'); // Allow specific headers (e.g., custom headers)
-//header('Access-Control-Allow-Credentials: true'); // Allow credentials (optional)
+header('Access-Control-Allow-Credentials: true'); // Allow credentials (optional)
 
 // Handle OPTIONS request for preflight (for PUT, DELETE, etc.)
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {

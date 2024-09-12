@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
-import Notifications from '@kyvg/vue3-notification'
 </script>
 
 <template>
@@ -22,12 +21,18 @@ import Notifications from '@kyvg/vue3-notification'
         <RouterLink to="/post-order">Post Order</RouterLink>
         <RouterLink to="/get-order">Get Order</RouterLink>
         <RouterLink to="/delete-order">Delete Order</RouterLink>
+        <RouterLink to="/create-user">Create User</RouterLink>
+        <RouterLink to="/create-users">Create Users</RouterLink>
+        <RouterLink to="/Login">Login</RouterLink>
+        <RouterLink to="/Logout">Logout</RouterLink>
+        <RouterLink to="/get-user">Get User</RouterLink>
+        <RouterLink to="/update-user">Update User</RouterLink>
+        <RouterLink to="/delete-user">Delete User</RouterLink>
       </nav>
     </div>
   </header>
 
   <RouterView />
-<!--  <notifications position="bottom right"/>-->
 </template>
 
 <style scoped>

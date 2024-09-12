@@ -3,7 +3,6 @@ namespace App\Api\Models;
 
 use App\Api\Enums\PetStatus;
 use SimpleXMLElement;
-use Tracy\Debugger;
 
 class Pet
 {
@@ -37,7 +36,7 @@ class Pet
             $data['id'],
             $data['name'],
             $category,
-            $data['photoUrls']['photoUrl'],
+            $data['photoUrls'],
             $tags,
             $status
         );
@@ -45,14 +44,24 @@ class Pet
 
     public static function createFromXml(SimpleXMLElement $xml): Pet
     {
-        Debugger::log($xml, Debugger::INFO);
-
         $json = json_encode($xml);
         $data = json_decode($json, true);
 
-        Debugger::log($data['photoUrls']['photoUrl'], Debugger::INFO);
+        $status = PetStatus::from($data['status']);
 
-        return self::createFromJson($data);
+        $category = new Category(is_array($data['category']['id']) ? null  : $data['category']['id'], is_array($data['category']['name']) ? '' : $data['category']['name']);
+        $tags = array_map(function ($tagData) {
+            return new Tag($tagData['id'] ?? null, $tagData['name'] ?? '');
+        }, $data['tags']);
+
+        return new Pet(
+            $data['id'],
+            is_array($data['name']) ? '' : $data['name'],
+            $category,
+            empty($data['photoUrls']) ? [] : (!isset($data['photoUrls']['photoUrl']) ? [$data['photoUrls']] : (is_string($data['photoUrls']['photoUrl']) ? [$data['photoUrls']['photoUrl']] : $data['photoUrls']['photoUrl'])),
+            $tags,
+            $status
+        );
     }
 
     public function toString(): string
@@ -71,5 +80,21 @@ class Pet
     );
     }
 
-
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'category' => [
+                'id' => $this->category->id,
+                'name' => $this->category->name,
+            ],
+            'photoUrls' => $this->photoUrls,
+            'tags' => array_map(fn($tag) => [
+                'id' => $tag->id,
+                'name' => $tag->name,
+            ], $this->tags),
+            'status' => $this->status->value,
+        ];
+    }
 }

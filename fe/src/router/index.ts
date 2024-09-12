@@ -11,6 +11,13 @@ import StoreInventory from '../views/StoreInventory.vue'
 import PostOrder from '../views/PostOrder.vue'
 import GetOrder from '../views/GetOrder.vue'
 import DeleteOrder from '../views/DeleteOrder.vue'
+import PostUser from "@/views/PostUser.vue";
+import PostUsers from "@/views/PostUsers.vue";
+import Login from "@/views/Login.vue";
+import Logout from "@/views/Logout.vue";
+import GetUser from "@/views/GetUser.vue";
+import PutUser from "@/views/PutUser.vue";
+import DeleteUser from "@/views/DeleteUser.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -74,6 +81,41 @@ const router = createRouter({
       path: '/delete-order',
       name: 'deleteOrder',
       component: DeleteOrder
+    },
+    {
+      path: '/create-user',
+      name: 'createUser',
+      component: PostUser
+    },
+    {
+      path: '/create-users',
+      name: 'createUsers',
+      component: PostUsers
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: Login
+    },
+    {
+      path: '/logout',
+      name: 'logout',
+      component: Logout
+    },
+    {
+      path: '/get-user',
+      name: 'getUser',
+      component: GetUser
+    },
+    {
+      path: '/update-user',
+      name: 'updateUser',
+      component: PutUser
+    },
+    {
+      path: '/delete-user',
+      name: 'deleteUser',
+      component: DeleteUser
     }
   ]
 })

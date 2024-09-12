@@ -43,8 +43,12 @@ const message = ref<string>('');
 
 const deleteOrder = async () => {
   try {
-    const response = await axios.delete('/store/order/' + order.value.id);
-    message.value = response.data;
+    if (order.value.id){
+      const response = await axios.delete('/store/order/' + order.value.id);
+      message.value = response.data;
+    } else {
+      message.value = 'Id must not be empty'
+    }
   } catch (error) {
     message.value = error.message;
   }

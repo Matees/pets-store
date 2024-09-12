@@ -6,13 +6,14 @@ use App\Api\Models\User;
 use App\Api\Repositories\UserRepository;
 use App\Api\Services\AuthenticationService;
 use App\Api\Traits\RequestMethodTrait;
+use App\Api\Traits\ResponseTrait;
 use App\Api\Validators\UserValidator;
 use Nette\Application\UI\Presenter;
 use SimpleXMLElement;
 
 class UserPresenter extends Presenter
 {
-    use RequestMethodTrait;
+    use RequestMethodTrait, ResponseTrait;
 
     const XML_FILE_NAME = '/users.xml';
     const ROUTES = [
@@ -22,6 +23,7 @@ class UserPresenter extends Presenter
         'detail' => 'GET',
         'delete' => 'DELETE',
         'update' => 'PUT',
+        'create' => 'Post',
     ];
 
     public function startup(): void
@@ -55,35 +57,55 @@ class UserPresenter extends Presenter
             throw new \InvalidArgumentException('Invalid JSON format: ' . json_last_error_msg());
         }
 
-        UserValidator::validateRequiredFields($data);
+        try {
+            UserValidator::validateRequiredFields($data);
 
-        $user = User::createFromJson($data);
+            $user = User::createFromJson($data);
 
-        $addedUser = $this->userRepository->addUserToXml($user);
+            $addedUser = $this->userRepository->addUserToXml($user);
+        } catch (\Exception $e) {
+            $this->sendError($e->getCode(), $e->getMessage());
+        }
 
-        $this->sendJson(['success' => 'User successfully saved', 'data' => $addedUser]);
+        $this->sendSuccess(200, $addedUser->toArray());
     }
 
     public function actionDetail($name)
     {
         if (!AuthenticationService::isLoggedIn()) {
-            $this->error('Not logged in.', 401);
+            $this->sendError(401 , 'Not logged in.');
         }
 
-        $user = $this->userRepository->findByName($name);
+        try {
+            $user = $this->userRepository->findByName($name);
+        } catch (\Exception $e) {
+            $this->sendError($e->getCode(), $e->getMessage());
+        }
 
-        $this->sendJson(['data' => $user]);
+        $this->sendSuccess(200, $user->toArray());
     }
 
     public function actionDelete($name)
     {
-        $this->userRepository->deleteUserFromXml($name);
+        if (!AuthenticationService::isLoggedIn()) {
+            $this->sendError(401, 'Not logged in.');
+        }
 
-        $this->sendJson(['data' => 'User successfully deleted from XML']);
+        try {
+            $this->userRepository->deleteUserFromXml($name);
+        } catch (\Exception $e) {
+            $this->sendError($e->getCode(), $e->getMessage());
+        }
+
+        $this->sendSuccess(200,' User successfully deleted from XML');
     }
 
     public function actionCreateWithList()
     {
+        if (!AuthenticationService::isLoggedIn()) {
+            $this->sendError(401 , 'Not logged in.');
+        }
+
         $requestBody = file_get_contents('php://input');
         $usersInput = json_decode($requestBody, true);
 
@@ -93,21 +115,25 @@ class UserPresenter extends Presenter
         }
 
         $users = [];
-        foreach ($usersInput as $user) {
-            UserValidator::validateRequiredFields($user);
+        try {
+            foreach ($usersInput as $user) {
+                UserValidator::validateRequiredFields($user);
 
-            $userModel = User::createFromJson($user);
+                $userModel = User::createFromJson($user);
 
-            $users[] = $this->userRepository->addUserToXml($userModel);
+                $users[] = $this->userRepository->addUserToXml($userModel);
+            }
+        } catch (\Exception $e) {
+            $this->sendError($e->getCode(), $e->getMessage());
         }
 
-        $this->sendJson(['data' => $users]);
+        $this->sendSuccess(200, $users);
     }
 
     public function actionUpdate($name)
     {
-        if (!$this->getRequest()->isMethod('PUT')) {
-            $this->error('Invalid request method. Only POST is allowed.', 405);
+        if (!AuthenticationService::isLoggedIn()) {
+            $this->sendError(401 , 'Not logged in.');
         }
 
         $requestBody = file_get_contents('php://input');
@@ -118,13 +144,17 @@ class UserPresenter extends Presenter
             throw new \InvalidArgumentException('Invalid JSON format: ' . json_last_error_msg());
         }
 
-        UserValidator::validateRequiredFields($data);
+        try {
+            UserValidator::validateRequiredFields($data, update: true);
 
-        $user = User::createFromJson($data);
+            $user = User::createFromJson($data);
 
-        $addedUser = $this->userRepository->updateUserInXml($name, $user);
+            $addedUser = $this->userRepository->updateUserInXml($name, $user);
+        } catch (\Exception $e) {
+            $this->sendError($e->getCode(), $e->getMessage());
+        }
 
-        $this->sendJson(['success' => 'User successfully updated', 'data' => $addedUser]);
+        $this->sendSuccess(200, $addedUser->toArray());
     }
 
     public function actionLogin()
@@ -132,9 +162,14 @@ class UserPresenter extends Presenter
         $username = $this->getParameter('username');
         $password = $this->getParameter('password');
 
-        $logged = (new AuthenticationService())->login($username, $password, $this->userRepository->getValidUsers());
+        $logged = false;
+        try {
+            $logged = (new AuthenticationService())->login($username, $password, $this->userRepository->getValidUsers());
+        } catch (\Exception $e) {
+            $this->sendError($e->getCode(), $e->getMessage());
+        }
 
-        $this->sendJson(['data' => $logged]);
+        $this->sendSuccess(200, $logged ? 'Successfully logged in' : 'Login failed');
     }
 
     public function actionLogout()

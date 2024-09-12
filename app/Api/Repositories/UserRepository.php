@@ -7,7 +7,6 @@ use DOMDocument;
 use DOMXPath;
 use InvalidArgumentException;
 use RuntimeException;
-use Tracy\Debugger;
 
 class UserRepository
 {
@@ -43,9 +42,9 @@ class UserRepository
                 throw new RuntimeException('Username already exists.');
             }
 
-            $existingUser = $this->findByEmail($user->email, true);
+            $existingEmail = $this->findByEmail($user->email, true);
 
-            if ($existingUser) {
+            if ($existingEmail) {
                 throw new RuntimeException('Email already exists.');
             }
         }
@@ -145,7 +144,6 @@ class UserRepository
 
         $xml = simplexml_load_file($this->filePath);
 
-        Debugger::log($name, 'info');
         $nodeDeleted = false;
         foreach ($xml->user as $userNode) {
             if ((string) $userNode->username == $name) {

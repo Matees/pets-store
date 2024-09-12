@@ -17,11 +17,7 @@
 <script lang="ts" setup>
 import { ref } from 'vue';
 import axios from 'axios';
-import { useNotification } from "@kyvg/vue3-notification";
 
-const { notify }  = useNotification()
-
-// Define the types for pet data
 interface Tag {
   id: number;
   name: string;
@@ -62,12 +58,13 @@ function addPhotoUrl(url) {
 const fetchPetData = async () => {
   try {
     if (pet.value.id) {
-      const response = await axios.get('/pet/' + pet.value.id);
+      const response = await axios.get('/pet/detail/' + pet.value.id);
       message.value = response.data;
-      console.log(Object.values(response.data.message.photoUrls))
-      response.data.message.photoUrls.forEach((url, index) => {
-        addPhotoUrl(url);
-      });
+      if (response.data.message.photoUrls) {
+        response.data.message.photoUrls.forEach((url, index) => {
+          addPhotoUrl(url);
+        });
+      }
     } else {
       message.value = 'Please enter id.'
     }

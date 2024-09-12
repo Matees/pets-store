@@ -7,7 +7,6 @@ use DOMDocument;
 use DOMXPath;
 use InvalidArgumentException;
 use RuntimeException;
-use Tracy\Debugger;
 
 class PetRepository
 {
@@ -71,9 +70,10 @@ class PetRepository
         $pets = [];
         foreach ($xml->pet as $petNode) {
             foreach ($petNode->tags as $tag) {
-                if (in_array((string)$tag, $tags)) {
-                    // Convert XML node to Pet object
+                if (in_array((string)$tag->tag->name, $tags)) {
                     $pets[] = Pet::createFromXml($petNode);
+
+                    continue 2;
                 }
             }
         }
@@ -246,7 +246,7 @@ class PetRepository
         };
     }
 
-    public function addImageUrl($id, $url): void
+    public function addImageUrl($id, $url): Pet
     {
         if (!file_exists($this->filePath)) {
             throw new \RuntimeException("XML file not found.");
@@ -254,23 +254,25 @@ class PetRepository
 
         $xml = simplexml_load_file($this->filePath);
 
-        $nodeDeleted = false;
+        $foundPetNode = null;
         foreach ($xml->pet as $petNode) {
             if ((int) $petNode->id == $id) {
                 $petNode->photoUrls->addChild('photoUrl', htmlspecialchars($url));
 
-                $nodeDeleted = true;
+                $foundPetNode = $petNode;
                 break;
             }
         }
 
-        if (!$nodeDeleted) {
+        if (!$foundPetNode) {
             throw new InvalidArgumentException("Invalid Pet ID.");
         }
 
         if (!$this->saveXml($xml)){
             throw new RuntimeException("XML wasn't saved.");
         };
+
+        return Pet::createFromXml($foundPetNode);
     }
 }
 

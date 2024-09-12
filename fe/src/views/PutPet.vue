@@ -57,9 +57,7 @@
 <script lang="ts" setup>
 import { ref } from 'vue';
 import axios from 'axios';
-import { useNotification } from "@kyvg/vue3-notification";
 
-const { notify }  = useNotification()
 
 // Define the types for pet data
 interface Tag {
@@ -114,7 +112,7 @@ function addTag() {
 
 const putPet = async () => {
   try {
-    const response = await axios.put('/pet', pet.value);
+    const response = await axios.put('/pet/update', pet.value);
     message.value = response.data
   } catch (error) {
     cmessage.value = error.message;

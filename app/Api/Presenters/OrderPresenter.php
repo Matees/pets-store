@@ -5,6 +5,7 @@ namespace App\Api\Presenters;
 use App\Api\Models\Order;
 use App\Api\Repositories\OrderRepository;
 use App\Api\Traits\RequestMethodTrait;
+use App\Api\Traits\ResponseTrait;
 use App\Api\Validators\OrderValidator;
 use Nette\Application\UI\Presenter;
 use SimpleXMLElement;
@@ -12,7 +13,7 @@ use SimpleXMLElement;
 class OrderPresenter extends Presenter
 {
 
-    use RequestMethodTrait;
+    use RequestMethodTrait, ResponseTrait;
 
     const XML_FILE_NAME = '/orders.xml';
 
@@ -55,33 +56,52 @@ class OrderPresenter extends Presenter
             throw new \InvalidArgumentException('Invalid JSON format: ' . json_last_error_msg());
         }
 
-        OrderValidator::validateRequiredFields($data);
+        $addedOrder = null;
+        try {
+            OrderValidator::validateRequiredFields($data);
 
-        $order = Order::createFromJson($data);
+            $order = Order::createFromJson($data);
 
-        $addedOrder = $this->orderRepository->addOrderToXml($order);
+            $addedOrder = $this->orderRepository->addOrderToXml($order);
+        }catch (\Exception $e) {
+            $this->sendError($e->getCode(), $e->getMessage());
+        }
 
-        $this->sendJson(['success' => 'Order successfully saved', 'data' => $addedOrder]);
+        $this->sendSuccess(200, $addedOrder->toArray());
     }
 
     public function actionDetail($id)
     {
-        $pet = $this->orderRepository->findById($id);
+        $pet = null;
+        try {
+            $pet = $this->orderRepository->findById($id);
+        } catch (\Exception $e) {
+            $this->sendError($e->getCode(), $e->getMessage());
+        }
 
-        $this->sendJson(['data' => $pet]);
+        $this->sendSuccess(200, $pet->toArray());
     }
 
     public function actionDelete($id)
     {
-        $this->orderRepository->deleteOrderFromXml($id);
+        try {
+            $this->orderRepository->deleteOrderFromXml($id);
+        } catch (\Exception $e) {
+            $this->sendError($e->getCode(), $e->getMessage());
+        }
 
-        $this->sendJson(['data' => 'Order successfully deleted from XML']);
+        $this->sendSuccess(200, 'Order successfully deleted from XML');
     }
 
     public function actionInventory()
     {
-        $inventory = $this->orderRepository->getInventory();
+        $inventory = null;
+        try {
+            $inventory = $this->orderRepository->getInventory();
+        } catch (\Exception $e) {
+            $this->sendError($e->getCode(), $e->getMessage());
+        }
 
-        $this->sendJson(['data' => $inventory]);
+        $this->sendSuccess(200, $inventory);
     }
 }
